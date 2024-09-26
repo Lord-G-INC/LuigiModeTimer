@@ -13,52 +13,64 @@
 extern GalaxyTimeLimitInfo sTimeLimitInfoTable[];
 
 void CometEventKeeper::init() {
-    initCometStatus();
+	initCometStatus();
 
-    u32 timer = 0;
-    if (!MR::isPlayerLuigi()) {
-        if (isStartEvent("Red") || isStartEvent("Black"))
-            timer = getTimeLimitFromTable(sTimeLimitInfoTable, 9) / 60;
-    } else {
-        GalaxyStatusAccessor gsa = MR::makeCurrentGalaxyStatusAccessor();
-        if (!gsa.mScenarioData->getValueU32("LuigiModeTimer", MR::getCurrentScenarioNo(), &timer))
-            timer = 0;
-    }
+	u32 timer = 0;
+	if (!MR::isPlayerLuigi()) {
+		if (isStartEvent("Red") || isStartEvent("Black"))
+			timer = getTimeLimitFromTable(sTimeLimitInfoTable, 9) / 60;
+	} else {
+		GalaxyStatusAccessor gsa = MR::makeCurrentGalaxyStatusAccessor();
+		if (!gsa.mScenarioData->getValueU32("LuigiModeTimer", MR::getCurrentScenarioNo(), &timer))
+			timer = 0;
+	}
 
-    if (timer != 0) {
-        _0 = new CometEventExecutorTimeLimit(timer);
-        _0->initWithoutIter();
-        _0->kill();
-    }
+	if (timer != 0) {
+		_0 = new CometEventExecutorTimeLimit(timer);
+		_0->initWithoutIter();
+		_0->kill();
+	}
 
-    if (_8) {
-        _4 = new GalaxyCometScreenFilter();
-        _4->initWithoutIter();
-        _4->_20 = 1;
-        _4->setCometType(_8);
-    }
+	if (_8) {
+		_4 = new GalaxyCometScreenFilter();
+		_4->initWithoutIter();
+		_4->_20 = 1;
+		_4->setCometType(_8);
+	}
 }
 
 void CometEventKeeper::endCometEvent() {
-    if (_0) {
-        _0->kill();
-        if (_4)
-            _4->_20 = 0;
-    }
+	if (_0) {
+		_0->kill();
+
+		if (_4)
+			_4->_20 = 0;
+	}
 }
 
 extern "C" {
-    extern void init__16CometEventKeeperFv();
-    extern void endCometEvent__16CometEventKeeperFv();
+	extern void init__16CometEventKeeperFv();
+	extern void endCometEvent__16CometEventKeeperFv();
+}
 
-#if defined(USA) || defined(JPN)
-    kmBranch(0x80299AE4, init__16CometEventKeeperFv);
-    kmBranch(0x80299C28, endCometEvent__16CometEventKeeperFv);
-#elif defined(PAL)
-    kmBranch(0x80299B00, init__16CometEventKeeperFv);
-    kmBranch(0x80299C44, endCometEvent__16CometEventKeeperFv);
-#else // KOR
-    kmBranch(0x8029A094, init__16CometEventKeeperFv);
-    kmBranch(0x8029A1D8, endCometEvent__16CometEventKeeperFv);
+#if defined(US)
+kmBranch(0x80299AE4, init__16CometEventKeeperFv);
+kmBranch(0x80299C28, endCometEvent__16CometEventKeeperFv);
+#define DISABLE_CHECKPOINT_ADDR 0x803F827C
+#elif defined(JP)
+kmBranch(0x80299AE4, init__16CometEventKeeperFv);
+kmBranch(0x80299C28, endCometEvent__16CometEventKeeperFv);
+#define DISABLE_CHECKPOINT_ADDR 0x803F8278
+#elif defined(EU)
+kmBranch(0x80299B00, init__16CometEventKeeperFv);
+kmBranch(0x80299C44, endCometEvent__16CometEventKeeperFv);
+#define DISABLE_CHECKPOINT_ADDR 0x803F8298
+#else // KR
+kmBranch(0x8029A094, init__16CometEventKeeperFv);
+kmBranch(0x8029A1D8, endCometEvent__16CometEventKeeperFv);
+#define DISABLE_CHECKPOINT_ADDR 0x803F9918
 #endif
+
+kmCallDefCpp(DISABLE_CHECKPOINT_ADDR, bool, void) {
+	return MR::isPlayerLuigi() || MR::isGalaxyAnyCometAppearInCurrentStage();
 }
